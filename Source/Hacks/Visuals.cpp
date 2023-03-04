@@ -726,6 +726,9 @@ void Visuals::drawGUI(bool contentOnly) noexcept
     ImGui::Checkbox("No grass", &noGrass);
     ImGui::Checkbox("No shadows", &noShadows);
     ImGui::Checkbox("Wireframe smoke", &wireframeSmoke);
+    ImGui::Checkbox("Deagle spinner", &visualsConfig.deagleSpinner);
+    ImGuiCustom::colorPicker("World color", visualsConfig.world);
+    ImGuiCustom::colorPicker("Sky color", visualsConfig.sky);
     ImGui::NextColumn();
     ImGui::Checkbox("Zoom", &zoom);
     ImGui::SameLine();
@@ -762,9 +765,6 @@ void Visuals::drawGUI(bool contentOnly) noexcept
     ImGui::PopID();
     ImGui::SameLine();
     ImGui::Combo("Skybox", &skyboxChanger.skybox, SkyboxChanger::skyboxList.data(), SkyboxChanger::skyboxList.size());
-    ImGuiCustom::colorPicker("World color", visualsConfig.world);
-    ImGuiCustom::colorPicker("Sky color", visualsConfig.sky);
-    ImGui::Checkbox("Deagle spinner", &visualsConfig.deagleSpinner);
     ImGui::Combo("Screen effect", &visualsConfig.screenEffect, "None\0Drone cam\0Drone cam with noise\0Underwater\0Healthboost\0Dangerzone\0");
     ImGui::Combo("Hit effect", &visualsConfig.hitEffect, "None\0Drone cam\0Drone cam with noise\0Underwater\0Healthboost\0Dangerzone\0");
     ImGui::SliderFloat("Hit effect time", &visualsConfig.hitEffectTime, 0.1f, 1.5f, "%.2fs");

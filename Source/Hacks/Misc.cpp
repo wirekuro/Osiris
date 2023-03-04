@@ -1228,13 +1228,13 @@ void Misc::drawGUI(Visuals& visuals, inventory_changer::InventoryChanger& invent
     ImGui::Checkbox("Auto strafe", &miscConfig.autoStrafe);
     ImGui::Checkbox("Bunny hop", &miscConfig.bunnyHop);
     ImGui::Checkbox("Fast duck", &miscConfig.fastDuck);
+    ImGui::Checkbox("Fast plant", &miscConfig.fastPlant);
+    ImGui::Checkbox("Fast Stop", &miscConfig.fastStop);
     ImGui::Checkbox("Edge Jump", &miscConfig.edgejump);
     ImGui::SameLine();
     ImGui::PushID("Edge Jump Key");
     ImGui::hotkey("", miscConfig.edgejumpkey);
     ImGui::PopID();
-    ImGuiCustom::colorPicker("Noscope crosshair", miscConfig.noscopeCrosshair);
-    ImGuiCustom::colorPicker("Recoil crosshair", miscConfig.recoilCrosshair);
     ImGui::Checkbox("Auto accept", &miscConfig.autoAccept);
     ImGui::Checkbox("Radar hack", &miscConfig.radarHack);
     ImGui::Checkbox("Reveal ranks", &miscConfig.revealRanks);
@@ -1256,30 +1256,13 @@ void Misc::drawGUI(Visuals& visuals, inventory_changer::InventoryChanger& invent
     ImGui::PopID();
 
     ImGui::Checkbox("Watermark", &miscConfig.watermark.enabled);
-    ImGuiCustom::colorPicker("Offscreen Enemies", miscConfig.offscreenEnemies.asColor4(), &miscConfig.offscreenEnemies.enabled);
-    ImGui::SameLine();
-    ImGui::PushID("Offscreen Enemies");
-    if (ImGui::Button("..."))
-        ImGui::OpenPopup("");
-
-    if (ImGui::BeginPopup("")) {
-        ImGui::Checkbox("Health Bar", &miscConfig.offscreenEnemies.healthBar.enabled);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(95.0f);
-        ImGui::Combo("Type", &miscConfig.offscreenEnemies.healthBar.type, "Gradient\0Solid\0Health-based\0");
-        if (miscConfig.offscreenEnemies.healthBar.type == HealthBar::Solid) {
-            ImGui::SameLine();
-            ImGuiCustom::colorPicker("", miscConfig.offscreenEnemies.healthBar.asColor4());
-        }
-        ImGui::EndPopup();
-    }
-    ImGui::PopID();
     ImGui::Checkbox("Fix animation LOD", &miscConfig.fixAnimationLOD);
     ImGui::Checkbox("Fix movement", &miscConfig.fixMovement);
     ImGui::Checkbox("Disable model occlusion", &miscConfig.disableModelOcclusion);
+    ImGui::Checkbox("Disable HUD blur", &miscConfig.disablePanoramablur);
     ImGui::SliderFloat("Aspect Ratio", &miscConfig.aspectratio, 0.0f, 5.0f, "%.2f");
     ImGui::NextColumn();
-    ImGui::Checkbox("Disable HUD blur", &miscConfig.disablePanoramablur);
+    ImGui::Text("  ");
     ImGui::Checkbox("Animated clan tag", &miscConfig.animatedClanTag);
     ImGui::Checkbox("Clock tag", &miscConfig.clocktag);
     ImGui::Checkbox("Custom clantag", &miscConfig.customClanTag);
@@ -1306,9 +1289,27 @@ void Misc::drawGUI(Visuals& visuals, inventory_changer::InventoryChanger& invent
     ImGui::SameLine();
     if (ImGui::Button("Setup fake ban"))
         fakeBan(true);
-    ImGui::Checkbox("Fast plant", &miscConfig.fastPlant);
-    ImGui::Checkbox("Fast Stop", &miscConfig.fastStop);
+    ImGuiCustom::colorPicker("Noscope crosshair", miscConfig.noscopeCrosshair);
+    ImGuiCustom::colorPicker("Recoil crosshair", miscConfig.recoilCrosshair);
     ImGuiCustom::colorPicker("Bomb timer", miscConfig.bombTimer);
+    ImGuiCustom::colorPicker("Offscreen Enemies", miscConfig.offscreenEnemies.asColor4(), &miscConfig.offscreenEnemies.enabled);
+    ImGui::SameLine();
+    ImGui::PushID("Offscreen Enemies");
+    if (ImGui::Button("..."))
+        ImGui::OpenPopup("");
+
+    if (ImGui::BeginPopup("")) {
+        ImGui::Checkbox("Health Bar", &miscConfig.offscreenEnemies.healthBar.enabled);
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(95.0f);
+        ImGui::Combo("Type", &miscConfig.offscreenEnemies.healthBar.type, "Gradient\0Solid\0Health-based\0");
+        if (miscConfig.offscreenEnemies.healthBar.type == HealthBar::Solid) {
+            ImGui::SameLine();
+            ImGuiCustom::colorPicker("", miscConfig.offscreenEnemies.healthBar.asColor4());
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::PopID();
     ImGui::PopID();
     ImGui::Combo("Hit Sound", &miscConfig.hitSound, "None\0Metal\0Gamesense\0Bell\0Glass\0Custom\0");
     if (miscConfig.hitSound == 5) {
