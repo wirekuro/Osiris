@@ -116,21 +116,15 @@ bool FASTCALL_CONV ClientModeHooks::createMove(FASTCALL_THIS(csgo::ClientMode* t
     features->misc.nadePredict();
     features->misc.antiAfkKick(cmd);
     features->misc.fastStop(cmd);
-    features->misc.prepareRevolver(cmd);
     features->visuals.removeShadows();
     features->misc.runReportbot();
     features->misc.bunnyHop(cmd);
     features->misc.autoStrafe(cmd);
     features->misc.removeCrouchCooldown(cmd);
-    features->misc.autoPistol(cmd);
-    features->misc.autoReload(cmd);
     features->misc.updateClanTag();
     features->misc.fakeBan();
-    features->misc.stealNames();
     features->misc.revealRanks(cmd);
-    features->misc.quickReload(cmd);
     features->misc.fixTabletSignal();
-    features->misc.slowwalk(cmd);
 
     EnginePrediction::run(ClientInterfaces{ retSpoofGadgets->client, *globalContext->clientInterfaces }, *globalContext->memory, cmd);
 
@@ -138,7 +132,6 @@ bool FASTCALL_CONV ClientModeHooks::createMove(FASTCALL_THIS(csgo::ClientMode* t
     Triggerbot::run(globalContext->getEngineInterfaces().engineTrace(), globalContext->getOtherInterfaces(), *globalContext->memory, *globalContext->config, cmd);
     features->backtrack.run(ClientInterfaces{ retSpoofGadgets->client, *globalContext->clientInterfaces }, globalContext->getEngineInterfaces(), globalContext->getOtherInterfaces(), *globalContext->memory, cmd);
     features->misc.edgejump(cmd);
-    features->misc.moonwalk(cmd);
     features->misc.fastPlant(cmd);
 
     auto viewAnglesDelta{ cmd->viewangles - previousViewAngles };

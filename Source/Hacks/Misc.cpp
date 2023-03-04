@@ -94,11 +94,7 @@ struct MiscConfig {
     bool clocktag{ false };
     bool animatedClanTag{ false };
     bool fastDuck{ false };
-    bool moonwalk{ false };
     bool edgejump{ false };
-    bool slowwalk{ false };
-    bool autoPistol{ false };
-    bool autoReload{ false };
     bool autoAccept{ false };
     bool radarHack{ false };
     bool revealRanks{ false };
@@ -108,20 +104,16 @@ struct MiscConfig {
     bool fixAnimationLOD{ false };
     bool fixMovement{ false };
     bool disableModelOcclusion{ false };
-    bool nameStealer{ false };
     bool disablePanoramablur{ false };
     bool killMessage{ false };
     bool nadePredict{ false };
     bool fixTabletSignal{ false };
     bool fastPlant{ false };
     bool fastStop{ false };
-    bool quickReload{ false };
-    bool prepareRevolver{ false };
     bool oppositeHandKnife = false;
     PreserveKillfeed preserveKillfeed;
     char clanTag[16];
     KeyBind edgejumpkey;
-    KeyBind slowwalkKey;
     ColorToggleThickness noscopeCrosshair;
     ColorToggleThickness recoilCrosshair;
 
@@ -142,7 +134,6 @@ struct MiscConfig {
     int banColor{ 6 };
     std::string banText{ "Cheater has been permanently banned from official CS:GO servers." };
     ColorToggle3 bombTimer{ 1.0f, 0.55f, 0.0f };
-    KeyBind prepareRevolverKey;
     int hitSound{ 0 };
     int quickHealthshotKey{ 0 };
     float maxAngleDelta{ 255.0f };
@@ -222,35 +213,6 @@ void Misc::edgejump(csgo::UserCmd* cmd) noexcept
 
     if ((EnginePrediction::getFlags() & 1) && !localPlayer.get().isOnGround())
         cmd->buttons |= csgo::UserCmd::IN_JUMP;
-}
-
-void Misc::slowwalk(csgo::UserCmd* cmd) noexcept
-{
-    if (!miscConfig.slowwalk || !miscConfig.slowwalkKey.isDown())
-        return;
-
-    if (!localPlayer || !localPlayer.get().isAlive())
-        return;
-
-    const auto activeWeapon = csgo::Entity::from(retSpoofGadgets->client, localPlayer.get().getActiveWeapon());
-    if (activeWeapon.getPOD() == nullptr)
-        return;
-
-    const auto weaponData = activeWeapon.getWeaponData();
-    if (!weaponData)
-        return;
-
-    const float maxSpeed = (localPlayer.get().isScoped() ? weaponData->maxSpeedAlt : weaponData->maxSpeed) / 3;
-
-    if (cmd->forwardmove && cmd->sidemove) {
-        const float maxSpeedRoot = maxSpeed * static_cast<float>(M_SQRT1_2);
-        cmd->forwardmove = cmd->forwardmove < 0.0f ? -maxSpeedRoot : maxSpeedRoot;
-        cmd->sidemove = cmd->sidemove < 0.0f ? -maxSpeedRoot : maxSpeedRoot;
-    } else if (cmd->forwardmove) {
-        cmd->forwardmove = cmd->forwardmove < 0.0f ? -maxSpeed : maxSpeed;
-    } else if (cmd->sidemove) {
-        cmd->sidemove = cmd->sidemove < 0.0f ? -maxSpeed : maxSpeed;
-    }
 }
 
 void Misc::updateClanTag(bool tagChanged) noexcept
@@ -419,25 +381,6 @@ void Misc::watermark() noexcept
     ImGui::End();
 }
 
-void Misc::prepareRevolver(csgo::UserCmd* cmd) noexcept
-{
-    auto timeToTicks = [this](float time) {  return static_cast<int>(0.5f + time / memory.globalVars->intervalPerTick); };
-    constexpr float revolverPrepareTime{ 0.234375f };
-
-    static float readyTime;
-    if (miscConfig.prepareRevolver && localPlayer && (!miscConfig.prepareRevolverKey.isSet() || miscConfig.prepareRevolverKey.isDown())) {
-        const auto activeWeapon = csgo::Entity::from(retSpoofGadgets->client, localPlayer.get().getActiveWeapon());
-        if (activeWeapon.getPOD() != nullptr && activeWeapon.itemDefinitionIndex() == WeaponId::Revolver) {
-            if (!readyTime) readyTime = memory.globalVars->serverTime() + revolverPrepareTime;
-            auto ticksToReady = timeToTicks(readyTime - memory.globalVars->serverTime() - csgo::NetworkChannel::from(retSpoofGadgets->client, engineInterfaces.getEngine().getNetworkChannel()).getLatency(0));
-            if (ticksToReady > 0 && ticksToReady <= timeToTicks(revolverPrepareTime))
-                cmd->buttons |= csgo::UserCmd::IN_ATTACK;
-            else
-                readyTime = 0.0f;
-        }
-    }
-}
-
 void Misc::fastPlant(csgo::UserCmd* cmd) noexcept
 {
     if (!miscConfig.fastPlant)
@@ -555,78 +498,10 @@ void Misc::drawBombTimer() noexcept
     ImGui::End();
 }
 
-void Misc::stealNames() noexcept
-{
-    if (!miscConfig.nameStealer)
-        return;
-
-    if (!localPlayer)
-        return;
-
-    static std::vector<int> stolenIds;
-
-    for (int i = 1; i <= memory.globalVars->maxClients; ++i) {
-        const auto entityPtr = clientInterfaces.getEntityList().getEntity(i);
-        const auto entity = csgo::Entity::from(retSpoofGadgets->client, entityPtr);
-
-        if (entity.getPOD() == nullptr || entity.getPOD() == localPlayer.get().getPOD())
-            continue;
-
-        csgo::PlayerInfo playerInfo;
-        if (!engineInterfaces.getEngine().getPlayerInfo(entity.getNetworkable().index(), playerInfo))
-            continue;
-
-        if (playerInfo.fakeplayer || std::ranges::find(stolenIds, playerInfo.userId) != stolenIds.cend())
-            continue;
-
-        if (changeName(false, (std::string{ playerInfo.name } +'\x1').c_str(), 1.0f))
-            stolenIds.push_back(playerInfo.userId);
-
-        return;
-    }
-    stolenIds.clear();
-}
-
 void Misc::disablePanoramablur() noexcept
 {
     static auto blur = interfaces.getCvar().findVar(csgo::panorama_disable_blur);
     csgo::ConVar::from(retSpoofGadgets->client, blur).setValue(miscConfig.disablePanoramablur);
-}
-
-void Misc::quickReload(csgo::UserCmd* cmd) noexcept
-{
-    if (miscConfig.quickReload) {
-        static csgo::EntityPOD* reloadedWeapon = nullptr;
-
-        if (reloadedWeapon) {
-            for (auto weaponHandle : localPlayer.get().weapons()) {
-                if (weaponHandle == -1)
-                    break;
-
-                if (clientInterfaces.getEntityList().getEntityFromHandle(weaponHandle) == reloadedWeapon) {
-                    cmd->weaponselect = csgo::Entity::from(retSpoofGadgets->client, reloadedWeapon).getNetworkable().index();
-                    cmd->weaponsubtype = csgo::Entity::from(retSpoofGadgets->client, reloadedWeapon).getWeaponSubType();
-                    break;
-                }
-            }
-            reloadedWeapon = nullptr;
-        }
-
-        if (const auto activeWeapon = csgo::Entity::from(retSpoofGadgets->client, localPlayer.get().getActiveWeapon()); activeWeapon.getPOD() != nullptr && activeWeapon.isInReload() && activeWeapon.clip() == activeWeapon.getWeaponData()->maxClip) {
-            reloadedWeapon = activeWeapon.getPOD();
-
-            for (auto weaponHandle : localPlayer.get().weapons()) {
-                if (weaponHandle == -1)
-                    break;
-
-                if (const auto weapon = csgo::Entity::from(retSpoofGadgets->client, clientInterfaces.getEntityList().getEntityFromHandle(weaponHandle)); weapon.getPOD() && weapon.getPOD() != reloadedWeapon) {
-                    cmd->weaponselect = weapon.getNetworkable().index();
-                    cmd->weaponsubtype = weapon.getWeaponSubType();
-                    break;
-                }
-            }
-        }
-    }
 }
 
 bool Misc::changeName(bool reconnect, const char* newName, float delay) noexcept
@@ -753,28 +628,6 @@ void Misc::fixAnimationLOD(csgo::FrameStage stage) noexcept
 #endif
 }
 
-void Misc::autoPistol(csgo::UserCmd* cmd) noexcept
-{
-    if (miscConfig.autoPistol && localPlayer) {
-        const auto activeWeapon = csgo::Entity::from(retSpoofGadgets->client, localPlayer.get().getActiveWeapon());
-        if (activeWeapon.getPOD() != nullptr && activeWeapon.isPistol() && activeWeapon.nextPrimaryAttack() > memory.globalVars->serverTime()) {
-            if (activeWeapon.itemDefinitionIndex() == WeaponId::Revolver)
-                cmd->buttons &= ~csgo::UserCmd::IN_ATTACK2;
-            else
-                cmd->buttons &= ~csgo::UserCmd::IN_ATTACK;
-        }
-    }
-}
-
-void Misc::autoReload(csgo::UserCmd* cmd) noexcept
-{
-    if (miscConfig.autoReload && localPlayer) {
-        const auto activeWeapon = csgo::Entity::from(retSpoofGadgets->client, localPlayer.get().getActiveWeapon());
-        if (activeWeapon.getPOD() != nullptr && getWeaponIndex(activeWeapon.itemDefinitionIndex()) && !activeWeapon.clip())
-            cmd->buttons &= ~(csgo::UserCmd::IN_ATTACK | csgo::UserCmd::IN_ATTACK2);
-    }
-}
-
 void Misc::revealRanks(csgo::UserCmd* cmd) noexcept
 {
     if (miscConfig.revealRanks && cmd->buttons & csgo::UserCmd::IN_SCORE)
@@ -798,12 +651,6 @@ void Misc::removeCrouchCooldown(csgo::UserCmd* cmd) noexcept
 {
     if (miscConfig.fastDuck)
         cmd->buttons |= csgo::UserCmd::IN_BULLRUSH;
-}
-
-void Misc::moonwalk(csgo::UserCmd* cmd) noexcept
-{
-    if (miscConfig.moonwalk && localPlayer && localPlayer.get().moveType() != MoveType::LADDER)
-        cmd->buttons ^= csgo::UserCmd::IN_FORWARD | csgo::UserCmd::IN_BACK | csgo::UserCmd::IN_MOVELEFT | csgo::UserCmd::IN_MOVERIGHT;
 }
 
 void Misc::playHitSound(const csgo::GameEvent& event) noexcept
@@ -1381,21 +1228,13 @@ void Misc::drawGUI(Visuals& visuals, inventory_changer::InventoryChanger& invent
     ImGui::Checkbox("Auto strafe", &miscConfig.autoStrafe);
     ImGui::Checkbox("Bunny hop", &miscConfig.bunnyHop);
     ImGui::Checkbox("Fast duck", &miscConfig.fastDuck);
-    ImGui::Checkbox("Moonwalk", &miscConfig.moonwalk);
     ImGui::Checkbox("Edge Jump", &miscConfig.edgejump);
     ImGui::SameLine();
     ImGui::PushID("Edge Jump Key");
     ImGui::hotkey("", miscConfig.edgejumpkey);
     ImGui::PopID();
-    ImGui::Checkbox("Slowwalk", &miscConfig.slowwalk);
-    ImGui::SameLine();
-    ImGui::PushID("Slowwalk Key");
-    ImGui::hotkey("", miscConfig.slowwalkKey);
-    ImGui::PopID();
     ImGuiCustom::colorPicker("Noscope crosshair", miscConfig.noscopeCrosshair);
     ImGuiCustom::colorPicker("Recoil crosshair", miscConfig.recoilCrosshair);
-    ImGui::Checkbox("Auto pistol", &miscConfig.autoPistol);
-    ImGui::Checkbox("Auto reload", &miscConfig.autoReload);
     ImGui::Checkbox("Auto accept", &miscConfig.autoAccept);
     ImGui::Checkbox("Radar hack", &miscConfig.radarHack);
     ImGui::Checkbox("Reveal ranks", &miscConfig.revealRanks);
@@ -1456,8 +1295,6 @@ void Misc::drawGUI(Visuals& visuals, inventory_changer::InventoryChanger& invent
     ImGui::PushItemWidth(120.0f);
     ImGui::PushID(1);
     ImGui::InputText("", &miscConfig.killMessageString);
-    ImGui::PopID();
-    ImGui::Checkbox("Name stealer", &miscConfig.nameStealer);
     ImGui::PushID(3);
     ImGui::SetNextItemWidth(100.0f);
     ImGui::Combo("", &miscConfig.banColor, "White\0Red\0Purple\0Green\0Light green\0Turquoise\0Light red\0Gray\0Yellow\0Gray 2\0Light blue\0Gray/Purple\0Blue\0Pink\0Dark orange\0Orange\0");
@@ -1472,11 +1309,6 @@ void Misc::drawGUI(Visuals& visuals, inventory_changer::InventoryChanger& invent
     ImGui::Checkbox("Fast plant", &miscConfig.fastPlant);
     ImGui::Checkbox("Fast Stop", &miscConfig.fastStop);
     ImGuiCustom::colorPicker("Bomb timer", miscConfig.bombTimer);
-    ImGui::Checkbox("Quick reload", &miscConfig.quickReload);
-    ImGui::Checkbox("Prepare revolver", &miscConfig.prepareRevolver);
-    ImGui::SameLine();
-    ImGui::PushID("Prepare revolver Key");
-    ImGui::hotkey("", miscConfig.prepareRevolverKey);
     ImGui::PopID();
     ImGui::Combo("Hit Sound", &miscConfig.hitSound, "None\0Metal\0Gamesense\0Bell\0Glass\0Custom\0");
     if (miscConfig.hitSound == 5) {
@@ -1613,15 +1445,10 @@ static void from_json(const json& j, MiscConfig& m)
     read(j, "Clan tag", m.clanTag, sizeof(m.clanTag));
     read(j, "Animated clan tag", m.animatedClanTag);
     read(j, "Fast duck", m.fastDuck);
-    read(j, "Moonwalk", m.moonwalk);
     read(j, "Edge Jump", m.edgejump);
     read(j, "Edge Jump Key", m.edgejumpkey);
-    read(j, "Slowwalk", m.slowwalk);
-    read(j, "Slowwalk key", m.slowwalkKey);
     read<value_t::object>(j, "Noscope crosshair", m.noscopeCrosshair);
     read<value_t::object>(j, "Recoil crosshair", m.recoilCrosshair);
-    read(j, "Auto pistol", m.autoPistol);
-    read(j, "Auto reload", m.autoReload);
     read(j, "Auto accept", m.autoAccept);
     read(j, "Radar hack", m.radarHack);
     read(j, "Reveal ranks", m.revealRanks);
@@ -1636,17 +1463,13 @@ static void from_json(const json& j, MiscConfig& m)
     read(j, "Disable model occlusion", m.disableModelOcclusion);
     read(j, "Aspect Ratio", m.aspectratio);
     read(j, "Kill message", m.killMessage);
-    read<value_t::string>(j, "Kill message string", m.killMessageString);
-    read(j, "Name stealer", m.nameStealer);
+    read<value_t::string>(j, "Kill message string", m.killMessageString);;
     read(j, "Disable HUD blur", m.disablePanoramablur);
     read(j, "Ban color", m.banColor);
     read<value_t::string>(j, "Ban text", m.banText);
     read(j, "Fast plant", m.fastPlant);
     read(j, "Fast Stop", m.fastStop);
     read<value_t::object>(j, "Bomb timer", m.bombTimer);
-    read(j, "Quick reload", m.quickReload);
-    read(j, "Prepare revolver", m.prepareRevolver);
-    read(j, "Prepare revolver key", m.prepareRevolverKey);
     read(j, "Hit sound", m.hitSound);
     read(j, "Quick healthshot key", m.quickHealthshotKey);
     read(j, "Grenade predict", m.nadePredict);
@@ -1748,15 +1571,10 @@ static void to_json(json& j, const MiscConfig& o)
 
     WRITE("Animated clan tag", animatedClanTag);
     WRITE("Fast duck", fastDuck);
-    WRITE("Moonwalk", moonwalk);
     WRITE("Edge Jump", edgejump);
     WRITE("Edge Jump Key", edgejumpkey);
-    WRITE("Slowwalk", slowwalk);
-    WRITE("Slowwalk key", slowwalkKey);
     WRITE("Noscope crosshair", noscopeCrosshair);
     WRITE("Recoil crosshair", recoilCrosshair);
-    WRITE("Auto pistol", autoPistol);
-    WRITE("Auto reload", autoReload);
     WRITE("Auto accept", autoAccept);
     WRITE("Radar hack", radarHack);
     WRITE("Reveal ranks", revealRanks);
@@ -1772,16 +1590,12 @@ static void to_json(json& j, const MiscConfig& o)
     WRITE("Aspect Ratio", aspectratio);
     WRITE("Kill message", killMessage);
     WRITE("Kill message string", killMessageString);
-    WRITE("Name stealer", nameStealer);
     WRITE("Disable HUD blur", disablePanoramablur);
     WRITE("Ban color", banColor);
     WRITE("Ban text", banText);
     WRITE("Fast plant", fastPlant);
     WRITE("Fast Stop", fastStop);
     WRITE("Bomb timer", bombTimer);
-    WRITE("Quick reload", quickReload);
-    WRITE("Prepare revolver", prepareRevolver);
-    WRITE("Prepare revolver key", prepareRevolverKey);
     WRITE("Hit sound", hitSound);
     WRITE("Quick healthshot key", quickHealthshotKey);
     WRITE("Grenade predict", nadePredict);

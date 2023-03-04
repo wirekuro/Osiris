@@ -31,19 +31,15 @@ public:
     float aspectRatio() noexcept;
 
     void edgejump(csgo::UserCmd* cmd) noexcept;
-    void slowwalk(csgo::UserCmd* cmd) noexcept;
     void updateClanTag(bool = false) noexcept;
     void spectatorList() noexcept;
     void noscopeCrosshair(ImDrawList* drawlist) noexcept;
     void recoilCrosshair(ImDrawList* drawList) noexcept;
     void watermark() noexcept;
-    void prepareRevolver(csgo::UserCmd*) noexcept;
     void fastPlant(csgo::UserCmd*) noexcept;
     void fastStop(csgo::UserCmd*) noexcept;
     void drawBombTimer() noexcept;
-    void stealNames() noexcept;
     void disablePanoramablur() noexcept;
-    void quickReload(csgo::UserCmd*) noexcept;
     bool changeName(bool, const char*, float) noexcept;
     void bunnyHop(csgo::UserCmd*) noexcept;
     void fakeBan(bool = false) noexcept;
@@ -53,12 +49,9 @@ public:
     void fixMovement(csgo::UserCmd* cmd, float yaw) noexcept;
     void antiAfkKick(csgo::UserCmd* cmd) noexcept;
     void fixAnimationLOD(csgo::FrameStage stage) noexcept;
-    void autoPistol(csgo::UserCmd* cmd) noexcept;
-    void autoReload(csgo::UserCmd* cmd) noexcept;
     void revealRanks(csgo::UserCmd* cmd) noexcept;
     void autoStrafe(csgo::UserCmd* cmd) noexcept;
     void removeCrouchCooldown(csgo::UserCmd* cmd) noexcept;
-    void moonwalk(csgo::UserCmd* cmd) noexcept;
     void playHitSound(const csgo::GameEvent& event) noexcept;
     void killSound(const csgo::GameEvent& event) noexcept;
     void purchaseList(const csgo::GameEvent* event = nullptr) noexcept;
