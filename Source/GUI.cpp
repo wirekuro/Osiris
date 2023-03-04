@@ -73,7 +73,7 @@ GUI::GUI() noexcept
         const std::filesystem::path path{ pathToFonts };
         CoTaskMemFree(pathToFonts);
 
-        fonts.normal15px = io.Fonts->AddFontFromFileTTF((path / "tahoma.ttf").string().c_str(), 15.0f, &cfg, Helpers::getFontGlyphRanges());
+        fonts.normal15px = io.Fonts->AddFontFromFileTTF((path / "bahnschrift.ttf").string().c_str(), 15.0f, &cfg, Helpers::getFontGlyphRanges());
         if (!fonts.normal15px)
             io.Fonts->AddFontDefault(&cfg);
 
@@ -82,7 +82,7 @@ GUI::GUI() noexcept
             0x2605, 0x2605, // ★
             0
         };
-        io.Fonts->AddFontFromFileTTF((path / "seguisym.ttf").string().c_str(), 15.0f, &cfg, symbol);
+        io.Fonts->AddFontFromFileTTF((path / "bahnschrift.ttf").string().c_str(), 15.0f, &cfg, symbol);
         cfg.MergeMode = false;
     }
 #else
@@ -126,6 +126,13 @@ void GUI::updateColors(Config& config) const noexcept
 
 void GUI::handleToggle(Misc& misc, const OtherInterfaces& interfaces) noexcept
 {
+    const auto esc = KeyBind::KeyCode::ESCAPE;
+    const static KeyBind closeMenuKeybind(esc);
+
+    if (closeMenuKeybind.isPressed() && !ImGui::IsAnyItemActive()) {
+        open = false;
+        interfaces.getInputSystem().resetInputState();
+    }
     if (misc.isMenuKeyPressed()) {
         open = !open;
         if (!open)

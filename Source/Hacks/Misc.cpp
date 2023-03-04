@@ -86,7 +86,7 @@ struct PurchaseList {
 struct MiscConfig {
     MiscConfig() { clanTag[0] = '\0'; }
 
-    KeyBind menuKey{ KeyBind::INSERT };
+    KeyBind menuKey{ KeyBind::DEL };
     bool antiAfkKick{ false };
     bool autoStrafe{ false };
     bool bunnyHop{ false };
@@ -138,7 +138,7 @@ struct MiscConfig {
     };
     Watermark watermark;
     float aspectratio{ 0 };
-    std::string killMessageString{ "Gotcha!" };
+    std::string killMessageString{ "AHAHAHAHAHAH" };
     int banColor{ 6 };
     std::string banText{ "Cheater has been permanently banned from official CS:GO servers." };
     ColorToggle3 bombTimer{ 1.0f, 0.55f, 0.0f };
@@ -415,7 +415,7 @@ void Misc::watermark() noexcept
     static auto frameRate = 1.0f;
     frameRate = 0.9f * frameRate + 0.1f * memory.globalVars->absoluteFrameTime;
 
-    ImGui::Text("Osiris | %d fps | %d ms", frameRate != 0.0f ? static_cast<int>(1 / frameRate) : 0, GameData::getNetOutgoingLatency());
+    ImGui::Text("%d fps | %d ms", frameRate != 0.0f ? static_cast<int>(1 / frameRate) : 0, GameData::getNetOutgoingLatency());
     ImGui::End();
 }
 
